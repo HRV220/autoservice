@@ -115,7 +115,7 @@ const Order = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       field: "createDate",
-    }, // Явно указываем имя поля
+    },
     completeDate: { type: DataTypes.DATE, allowNull: true },
     status: {
       type: DataTypes.ENUM("ожидает", "в процессе", "выполнено"),
@@ -123,7 +123,7 @@ const Order = sequelize.define(
     },
     price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
   },
-  { tableName: "Order", timestamps: false } // У Order есть createDate, но нет updatedAt.
+  { tableName: "Order", timestamps: false }
 );
 
 const Service = sequelize.define(

@@ -9,5 +9,6 @@ router.get("/", orderController.getAll);
 // ... (существующие роуты post и get '/')
 router.get("/:id", orderController.getOne);
 router.put("/:id", orderController.update);
+router.delete("/:id", orderController.delete);
 // ...
 module.exports = router;

@@ -11,6 +11,7 @@ import EmployeeDetailPage from "./pages/EmployeeDetailPage";
 import AddEditEmployeePage from "./pages/AddEditEmployeePage";
 import PlanningPage from "./pages/PlanningPage"; // <-- Импорт
 import AddOrderPage from "./pages/AddOrderPage"; // <-- Импорт
+import OrderDetailPage from "./pages/OrderDetailPage"; // <-- Импорт
 
 function App() {
   return (
@@ -37,7 +38,6 @@ function App() {
               path="/masters/:employeeId/edit"
               element={<AddEditEmployeePage />}
             />{" "}
-            {/* <-- НОВЫЙ РОУТ */}
             <Route
               path="/masters/:employeeId"
               element={<EmployeeDetailPage />}
@@ -45,7 +45,7 @@ function App() {
             <Route path="/masters" element={<EmployeesPage />} />
             <Route path="/planning" element={<PlanningPage />} />
             <Route path="/orders/new" element={<AddOrderPage />} />{" "}
-            {/* <-- НОВЫЙ РОУТ */}
+            <Route path="/orders/:orderId" element={<OrderDetailPage />} />{" "}
           </Route>
         </Routes>
       </AuthProvider>

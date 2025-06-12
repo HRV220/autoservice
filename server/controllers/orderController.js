@@ -200,24 +200,41 @@ class OrderController {
     }
   }
 
-  // === НОВЫЙ МЕТОД: Получение одного заказа ===
   async getOne(req, res, next) {
     try {
       const { id } = req.params;
       const order = await Order.findOne({
         where: { orderId: id },
-        // Включаем АБСОЛЮТНО ВСЕ связанные данные
+        // Используем более простую и надежную структуру include
         include: [
-          { model: Client },
-          { model: Employee },
+          {
+            model: Client,
+            attributes: ["firstName", "lastName"],
+          },
+          {
+            model: Employee,
+            attributes: ["firstName", "lastName"],
+          },
           {
             model: ClientCar,
-            include: [{ model: CarModel }, { model: Engine }],
+            attributes: ["stateNumber"],
+            // Подгружаем CarModel так же, как в других контроллерах
+            include: [
+              {
+                model: CarModel,
+                as: "CarModel", // Указываем alias
+                attributes: ["brand", "model"],
+              },
+            ],
           },
-          { model: Box },
+          {
+            model: Box,
+            attributes: ["boxNumber"],
+          },
           {
             model: Service,
-            through: { attributes: ["count"] }, // Включаем количество из промежуточной таблицы
+            attributes: ["serviceId", "nameService", "price"],
+            through: { attributes: ["count"] },
           },
         ],
       });
@@ -227,49 +244,147 @@ class OrderController {
       }
       return res.json(order);
     } catch (e) {
+      console.error("SERVER ERROR in getOne Order:", e); // Добавим лог для отладки
       next(ApiError.internal("Ошибка при получении заказа: " + e.message));
     }
   }
 
-  // === НОВЫЙ МЕТОД: Обновление заказа ===
   async update(req, res, next) {
     const t = await sequelize.transaction();
     try {
       const { id } = req.params;
-      const { status, employeeId, boxId, services } = req.body; // Получаем поля, которые можно менять
+      const { status, employeeId, boxId, services } = req.body;
 
-      const order = await Order.findOne({ where: { orderId: id } });
+      const order = await Order.findOne({
+        where: { orderId: id },
+        transaction: t,
+      });
       if (!order) {
         return next(ApiError.notFound("Заказ не найден для обновления"));
       }
 
-      // 1. Обновляем основные поля заказа
-      await order.update({ status, employeeId, boxId }, { transaction: t });
+      let totalPrice = order.price; // Начинаем с текущей цены
 
-      // 2. Полностью переписываем список услуг (самый простой способ)
+      // Если пришел новый список услуг, полностью его переписываем и пересчитываем цену
       if (services && Array.isArray(services)) {
-        // Удаляем старые связи
+        console.log("[ЛОГ UPDATE] Обновляем список услуг...");
+
+        // 1. Удаляем старые связи
         await Order_Service.destroy({ where: { orderId: id }, transaction: t });
-        // Создаем новые
-        const orderServices = services.map((s) => ({
-          orderId: id,
-          serviceId: s.serviceId,
-          count: s.count || 1,
-        }));
-        await Order_Service.bulkCreate(orderServices, { transaction: t });
+
+        if (services.length > 0) {
+          // 2. Создаем новые, если они есть
+          const orderServices = services.map((s) => ({
+            orderId: id,
+            serviceId: s.serviceId,
+            count: s.count || 1,
+          }));
+          await Order_Service.bulkCreate(orderServices, { transaction: t });
+
+          // 3. Пересчитываем цену
+          const serviceIds = services.map((s) => s.serviceId);
+          const servicesFromDb = await Service.findAll({
+            where: { serviceId: serviceIds },
+            transaction: t,
+          });
+
+          totalPrice = 0; // Сбрасываем цену, так как список услуг новый
+          services.forEach((reqService) => {
+            const dbService = servicesFromDb.find(
+              (s) => s.serviceId === reqService.serviceId
+            );
+            if (dbService) {
+              totalPrice +=
+                parseFloat(dbService.price) * (reqService.count || 1);
+            }
+          });
+          console.log(`[ЛОГ UPDATE] Новая рассчитанная цена: ${totalPrice}`);
+        } else {
+          totalPrice = 0; // Если все услуги удалили, цена становится 0
+        }
       }
 
-      // Пересчитываем цену и сохраняем (логика из create)
-      // ... (здесь можно добавить пересчет цены, если список услуг изменился)
+      // Обновляем основные поля заказа
+      await order.update(
+        {
+          status,
+          employeeId,
+          boxId,
+          price: totalPrice, // Сохраняем новую или старую цену
+        },
+        { transaction: t }
+      );
 
       await t.commit();
+      console.log(`[ЛОГ UPDATE] Заказ ${id} успешно обновлен.`);
 
-      // Возвращаем обновленный заказ
-      const updatedOrder = await this.getOne({ params: { id } }, res, next);
-      // return res.json(updatedOrder) не сработает, поэтому мы просто вызовем getOne
+      // Находим и возвращаем полностью обновленный заказ со всеми связями
+      const updatedOrderWithIncludes = await Order.findOne({
+        where: { orderId: id },
+        include: [
+          { model: Client, attributes: ["firstName", "lastName"] },
+          { model: Employee, attributes: ["firstName", "lastName"] },
+          {
+            model: ClientCar,
+            attributes: ["stateNumber"],
+            include: [
+              {
+                model: CarModel,
+                as: "CarModel",
+                attributes: ["brand", "model"],
+              },
+            ],
+          },
+          { model: Box, attributes: ["boxNumber"] },
+          {
+            model: Service,
+            attributes: ["serviceId", "nameService", "price"],
+            through: { attributes: ["count"] },
+          },
+        ],
+      });
+
+      return res.json(updatedOrderWithIncludes);
     } catch (e) {
       await t.rollback();
+      console.error("--- ОШИБКА ПРИ ОБНОВЛЕНИИ ЗАКАЗА! ---", e);
       next(ApiError.internal("Ошибка при обновлении заказа: " + e.message));
+    }
+  }
+
+  async delete(req, res, next) {
+    const t = await sequelize.transaction();
+    try {
+      const { id } = req.params;
+
+      const order = await Order.findOne({
+        where: { orderId: id },
+        transaction: t,
+      });
+
+      if (!order) {
+        await t.rollback();
+        return next(ApiError.notFound("Заказ не найден"));
+      }
+
+      // Удаляем связи из Order_Service
+      await Order_Service.destroy({
+        where: { orderId: id },
+        transaction: t,
+      });
+
+      // Удаляем сам заказ
+      await Order.destroy({
+        where: { orderId: id },
+        transaction: t,
+      });
+
+      await t.commit();
+      return res.json({ message: `Заказ ${id} успешно удален.` });
+    } catch (e) {
+      await t.rollback();
+      console.error("--- ОШИБКА ПРИ УДАЛЕНИИ ЗАКАЗА ---", e);
+      next(ApiError.internal("Ошибка при удалении заказа: " + e.message));
     }
   }
 }

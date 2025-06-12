@@ -191,3 +191,9 @@ export const updateOrder = (id, orderData) => {
     baseURL: "http://localhost:5000/api",
   });
 };
+
+export const deleteOrder = (orderId) => {
+  return axios.delete(`/order/${orderId}`, {
+    baseURL: "http://localhost:5000/api",
+  });
+};
