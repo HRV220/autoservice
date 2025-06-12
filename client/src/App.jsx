@@ -9,6 +9,8 @@ import PriceListPage from "./pages/PriceListPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import EmployeeDetailPage from "./pages/EmployeeDetailPage";
 import AddEditEmployeePage from "./pages/AddEditEmployeePage";
+import PlanningPage from "./pages/PlanningPage"; // <-- Импорт
+import AddOrderPage from "./pages/AddOrderPage"; // <-- Импорт
 
 function App() {
   return (
@@ -41,6 +43,9 @@ function App() {
               element={<EmployeeDetailPage />}
             />
             <Route path="/masters" element={<EmployeesPage />} />
+            <Route path="/planning" element={<PlanningPage />} />
+            <Route path="/orders/new" element={<AddOrderPage />} />{" "}
+            {/* <-- НОВЫЙ РОУТ */}
           </Route>
         </Routes>
       </AuthProvider>

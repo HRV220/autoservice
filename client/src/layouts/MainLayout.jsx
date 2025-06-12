@@ -67,14 +67,9 @@ const MainLayout = () => {
             <NavLink to="/price-list" style={navLinkStyles}>
               Прайс-лист
             </NavLink>
-            <Button
-              sx={{
-                ...navLinkStyles({ isActive: false }),
-                cursor: "not-allowed",
-              }}
-            >
+            <NavLink to="/planning" style={navLinkStyles}>
               Планирование
-            </Button>
+            </NavLink>
             <NavLink to="/masters" style={navLinkStyles}>
               Мастера
             </NavLink>

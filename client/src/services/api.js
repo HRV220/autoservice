@@ -162,3 +162,32 @@ export const deleteEmployee = (id) => {
     baseURL: "http://localhost:5000/api",
   });
 };
+
+// === ORDER API ===
+export const fetchOrders = (date) => {
+  // date должен быть в формате YYYY-MM-DD
+  const params = date ? { date } : {};
+  return apiClient.get("/order", {
+    params,
+    baseURL: "http://localhost:5000/api",
+  });
+};
+
+// === ORDER API (дополняем) ===
+export const createOrder = (orderData) => {
+  return apiClient.post("/order", orderData, {
+    baseURL: "http://localhost:5000/api",
+  });
+};
+
+export const fetchOrderById = (id) => {
+  return apiClient.get(`/order/${id}`, {
+    baseURL: "http://localhost:5000/api",
+  });
+};
+
+export const updateOrder = (id, orderData) => {
+  return apiClient.put(`/order/${id}`, orderData, {
+    baseURL: "http://localhost:5000/api",
+  });
+};

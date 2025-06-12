@@ -20,9 +20,9 @@ const User = sequelize.define(
 const Box = sequelize.define(
   "Box",
   {
-    boxId: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     boxNumber: { type: DataTypes.SMALLINT },
     placeNumber: { type: DataTypes.SMALLINT },
+    boxId: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   },
   { tableName: "Box", timestamps: false }
 );
@@ -105,7 +105,7 @@ const Engine = sequelize.define(
 const Order = sequelize.define(
   "Order",
   {
-    orderID: {
+    orderId: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       allowNull: false,
