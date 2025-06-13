@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import OrderCard from "../components/OrderCard"; // <-- ИМПОРТИРУЕМ OrderCard
+
 import {
   Box,
   Paper,
@@ -276,6 +278,37 @@ const ClientDetailPage = () => {
         </Grid>
       </Paper>
 
+      {/* ============== ОБНОВЛЕННЫЙ БЛОК: ЗАЯВКИ ============== */}
+      <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: "16px" }}>
+        <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
+          Заявки
+        </Typography>
+
+        {/* Используем Grid для отображения карточек в несколько колонок */}
+        <Grid container spacing={2}>
+          {client.Orders && client.Orders.length > 0 ? (
+            client.Orders.map((order) => (
+              // ДОБАВЛЯЕМ СТИЛЬ СЮДА
+              <Grid
+                item
+                key={order.orderId}
+                xs={12}
+                sm={6}
+                md={4}
+                sx={{ display: "flex" }}
+              >
+                <OrderCard order={order} />
+              </Grid>
+            ))
+          ) : (
+            <Grid item xs={12}>
+              <Typography color="text.secondary">
+                У клиента еще нет заявок.
+              </Typography>
+            </Grid>
+          )}
+        </Grid>
+      </Paper>
       <AddEditCarModal
         open={isCarModalOpen}
         handleClose={() => setCarModalOpen(false)}

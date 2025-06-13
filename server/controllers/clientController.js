@@ -1,4 +1,11 @@
-const { Client, ClientCar, CarModel } = require("../entity/models/models");
+const {
+  Client,
+  ClientCar,
+  CarModel,
+  Order,
+  Service,
+  Engine,
+} = require("../entity/models/models");
 const ApiError = require("../error/ApiError");
 
 class ClientController {
@@ -87,25 +94,31 @@ class ClientController {
     }
   }
 
-  // ============== НОВЫЙ МЕТОД ==============
   async getOne(req, res, next) {
     try {
-      const { id } = req.params; // Получаем id из параметров URL
+      const { id } = req.params;
       if (!id) {
         return next(ApiError.badRequest("Не указан ID клиента"));
       }
 
       const client = await Client.findOne({
         where: { clientId: id },
-        // Включаем те же самые связанные данные, что и в getAll
+        // === ОБНОВЛЕННЫЙ И БОЛЕЕ НАДЕЖНЫЙ INCLUDE ===
         include: [
           {
-            model: ClientCar,
-            as: "ClientCars",
+            model: ClientCar, // Sequelize будет использовать имя по умолчанию 'ClientCars'
+            include: [
+              { model: CarModel }, // Имя по умолчанию 'CarModel'
+              { model: Engine }, // Имя по умолчанию 'Engine'
+            ],
+          },
+          {
+            model: Order, // Имя по умолчанию 'Orders'
             include: [
               {
-                model: CarModel,
-                as: "CarModel",
+                model: Service, // Имя по умолчанию 'Services'
+                attributes: ["nameService"],
+                through: { attributes: [] },
               },
             ],
           },
@@ -116,10 +129,11 @@ class ClientController {
         return next(ApiError.notFound("Клиент с таким ID не найден"));
       }
 
-      // Мы не будем форматировать данные здесь,
-      // чтобы фронтенд получил полную информацию для детальной страницы
+      // Отправляем на фронт как есть, фронт разберется
       return res.json(client);
     } catch (e) {
+      // Логируем ошибку для отладки
+      console.error("SERVER ERROR in getOne Client:", e);
       next(
         ApiError.internal("Ошибка при получении данных клиента: " + e.message)
       );

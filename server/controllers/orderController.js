@@ -37,6 +37,18 @@ class OrderController {
         );
       }
 
+      const finalCreateDate = createDate ? new Date(createDate) : new Date();
+      const finalCompleteDate = completeDate ? new Date(completeDate) : null;
+
+      console.log(
+        `[ЛОГ] Дата начала для сохранения: ${finalCreateDate.toISOString()}`
+      );
+      if (finalCompleteDate) {
+        console.log(
+          `[ЛОГ] Дата конца для сохранения: ${finalCompleteDate.toISOString()}`
+        );
+      }
+
       const serviceIds = services.map((s) => s.serviceId);
       const servicesFromDb = await Service.findAll({
         where: { serviceId: serviceIds },
@@ -113,8 +125,8 @@ class OrderController {
           carId,
           boxId: foundBoxId, // Используем найденный ID
           price: totalPrice,
-          createDate,
-          completeDate,
+          createDate: finalCreateDate, // <-- Используем объект Date
+          completeDate: finalCompleteDate, // <-- Используем объект Date или null
           status: status || "ожидает",
         },
         { transaction: t }

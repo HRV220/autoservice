@@ -56,13 +56,16 @@ const PlanningPage = () => {
 
   // ============== ИСПРАВЛЕННАЯ ФУНКЦИЯ getOrderStyle ==============
   const getOrderStyle = (order) => {
+    // Проверяем наличие дат
     if (!order.createDate || !order.completeDate) {
+      console.warn(`Заказ №${order.orderId} не имеет дат начала/конца.`);
       return { display: "none" };
     }
 
     const startDate = new Date(order.createDate);
     const endDate = new Date(order.completeDate);
 
+    // Считаем длительность в 30-минутных "слотах"
     const durationMinutes =
       (endDate.getTime() - startDate.getTime()) / (1000 * 60);
     const durationSlots = Math.max(1, Math.round(durationMinutes / 30));
@@ -73,25 +76,23 @@ const PlanningPage = () => {
     const boxMapping = { 1: 0, 2: 1, 3: 2, 4: 3 };
     const boxIndex = order.Box ? boxMapping[order.Box.boxNumber] : -1;
 
-    if (
-      boxIndex === -1 ||
-      boxIndex >= BOXES.length ||
-      startHour < 8 ||
-      startHour > 20
-    ) {
+    // Проверяем, что заказ вообще должен быть на сетке
+    if (boxIndex === -1 || startHour < 8 || startHour >= 21) {
       return { display: "none" };
     }
     const gridRow = boxIndex + 2;
 
+    // Считаем начальную колонку (от 2 до 25)
     const gridColumnStart =
       (startHour - 8) * 2 + Math.floor(startMinute / 30) + 2;
 
     return {
       gridRow: gridRow,
+      // ИСПРАВЛЕНО: Используем 'span' и правильную переменную
       gridColumn: `${gridColumnStart} / span ${durationSlots}`,
       p: 0.5,
       minWidth: 0,
-      zIndex: 1, // Чтобы карточка была поверх ячеек
+      zIndex: 1,
     };
   };
 

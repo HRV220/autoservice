@@ -15,7 +15,6 @@ import {
 import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import AddIcon from "@mui/icons-material/Add";
-import dayjs from "dayjs";
 
 // Импортируем все необходимые API функции
 import {
@@ -24,6 +23,18 @@ import {
   fetchServices,
   createOrder,
 } from "../services/api";
+
+// === НАСТРОЙКА DAYJS ДЛЯ РАБОТЫ С ЧАСОВЫМИ ПОЯСАМИ ===
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// Применяем плагины
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+// Устанавливаем часовой пояс по умолчанию для всех операций dayjs в этом файле
+const moscowTimezone = "Europe/Moscow"; // Москва это UTC+3, но можно указать любой
 
 const AddOrderPage = () => {
   const navigate = useNavigate();
@@ -37,8 +48,11 @@ const AddOrderPage = () => {
   const [selectedClient, setSelectedClient] = useState(null);
   const [selectedCar, setSelectedCar] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [startTime, setStartTime] = useState(dayjs());
-  const [endTime, setEndTime] = useState(dayjs().add(2, "hour"));
+  // === ИЗМЕНЕНИЕ: Устанавливаем начальное время в нужном часовом поясе ===
+  const [startTime, setStartTime] = useState(dayjs().tz(moscowTimezone));
+  const [endTime, setEndTime] = useState(
+    dayjs().tz(moscowTimezone).add(2, "hour")
+  );
   const [boxNumber, setBoxNumber] = useState("");
   const [placeNumber, setPlaceNumber] = useState("");
 
@@ -154,8 +168,11 @@ const AddOrderPage = () => {
         <Typography variant="h6" sx={{ mb: 2 }}>
           Данные клиента и автомобиля
         </Typography>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+        {/* ИСПОЛЬЗУЕМ FLEXBOX ВМЕСТО GRID ДЛЯ НАДЕЖНОСТИ */}
+        <Box sx={{ display: "flex", gap: 3 }}>
+          <Box sx={{ flex: 1 }}>
+            {" "}
+            {/* Занимает половину доступного места */}
             <Autocomplete
               options={clients}
               getOptionLabel={(option) => option.name || ""}
@@ -168,8 +185,10 @@ const AddOrderPage = () => {
                 <TextField {...params} label="Выберите клиента *" />
               )}
             />
-          </Grid>
-          <Grid item xs={12} md={6}>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            {" "}
+            {/* Занимает вторую половину */}
             <Autocomplete
               options={carOptions}
               getOptionLabel={(option) =>
@@ -182,16 +201,18 @@ const AddOrderPage = () => {
                 <TextField {...params} label="Выберите автомобиль *" />
               )}
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Paper>
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
           Проводимые работы
         </Typography>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={7}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+          <Box sx={{ flex: "2 1 0" }}>
+            {" "}
+            {/* Занимает 2/4 ширины */}
             <Autocomplete
               options={services}
               getOptionLabel={(option) =>
@@ -203,8 +224,10 @@ const AddOrderPage = () => {
                 <TextField {...params} label="Выберите работу" />
               )}
             />
-          </Grid>
-          <Grid item xs={6} md={3}>
+          </Box>
+          <Box sx={{ flex: "1 1 0" }}>
+            {" "}
+            {/* Занимает 1/4 ширины */}
             <TextField
               label="Количество"
               type="number"
@@ -213,19 +236,22 @@ const AddOrderPage = () => {
               fullWidth
               InputProps={{ inputProps: { min: 1 } }}
             />
-          </Grid>
-          <Grid item xs={6} md={2}>
+          </Box>
+          <Box sx={{ flex: "1 1 0" }}>
+            {" "}
+            {/* Занимает 1/4 ширины */}
             <Button
               variant="contained"
               onClick={handleAddService}
               fullWidth
               startIcon={<AddIcon />}
               disabled={!currentService}
+              sx={{ height: "56px" }}
             >
               Добавить
             </Button>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
         <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
           {selectedServices.map(({ service, count }) => (
             <Chip
@@ -242,7 +268,7 @@ const AddOrderPage = () => {
           Информация о заявке
         </Typography>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} sm={6}>
             <Autocomplete
               options={employees}
               getOptionLabel={(option) =>
@@ -255,26 +281,29 @@ const AddOrderPage = () => {
               )}
             />
           </Grid>
-          <Grid item xs={12} md={6} />
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} sm={6} />
+          {/* Для полей с фиксированной шириной Grid подходит отлично */}
+          <Grid item xs={12} sm={6} md={3}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DateTimePicker
                 label="Начало работ"
                 value={startTime}
                 onChange={setStartTime}
+                timezone={moscowTimezone}
               />
             </LocalizationProvider>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DateTimePicker
                 label="Конец работ"
                 value={endTime}
                 onChange={setEndTime}
+                timezone={moscowTimezone}
               />
             </LocalizationProvider>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               label="Номер бокса"
@@ -282,7 +311,7 @@ const AddOrderPage = () => {
               onChange={(e) => setBoxNumber(e.target.value)}
             />
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               label="Номер места"
