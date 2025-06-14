@@ -1,7 +1,6 @@
 const sequelize = require("../../db");
 const { DataTypes } = require("sequelize");
 
-// Модель User остается без изменений, если ее таблица называется "Users" или вы используете freezeTableName: true
 const User = sequelize.define(
   "User",
   {
@@ -13,7 +12,7 @@ const User = sequelize.define(
     },
     login: { type: DataTypes.STRING, unique: true, allowNull: false },
     passwordHash: { type: DataTypes.STRING, allowNull: false },
-  }, // Предполагая, что таблица называется 'User', если не 'Users'
+  },
   { tableName: "User", timestamps: false }
 );
 
@@ -37,7 +36,7 @@ const ClientCar = sequelize.define(
     },
     stateNumber: { type: DataTypes.STRING, allowNull: false, unique: true },
     vin: { type: DataTypes.STRING, allowNull: false, unique: true },
-    yearRelease: { type: DataTypes.SMALLINT }, // Исправлено: yearRealese -> yearRelease
+    yearRelease: { type: DataTypes.SMALLINT },
     bodyType: { type: DataTypes.STRING, allowNull: false },
     mileage: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
     transmission: {
@@ -60,14 +59,14 @@ const Client = sequelize.define(
     firstName: { type: DataTypes.STRING, allowNull: false },
     lastName: { type: DataTypes.STRING, allowNull: false },
     middleName: { type: DataTypes.STRING },
-    email: { type: DataTypes.STRING, allowNull: true }, // В DDL email может быть NULL
+    email: { type: DataTypes.STRING, allowNull: true },
     createdDate: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       field: "createdDate",
-    }, // Явно указываем имя поля, если оно отличается от createdAt
+    },
   },
-  { tableName: "Client", timestamps: false } // У Client есть createdDate, но нет updatedAt. Если нужен только createdDate, то timestamps: false и управляем createdDate вручную или через field. Либо timestamps: true, но тогда нужно добавить updatedAt в БД или указать `updatedAt: false`
+  { tableName: "Client", timestamps: false }
 );
 
 const Employee = sequelize.define(
@@ -129,13 +128,13 @@ const Order = sequelize.define(
 const Service = sequelize.define(
   "Service",
   {
-    serviceId: {
+    id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       allowNull: false,
       autoIncrement: true,
     },
-    nameService: { type: DataTypes.STRING, allowNull: false, unique: true },
+    name: { type: DataTypes.STRING, allowNull: false, unique: true },
     description: { type: DataTypes.TEXT, allowNull: true },
     price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
   },
@@ -177,15 +176,11 @@ const CarModel = sequelize.define(
 const Order_Service = sequelize.define(
   "Order_Service",
   {
-    // Sequelize автоматически добавит orderId и serviceId как внешние ключи
-    count: { type: DataTypes.SMALLINT, allowNull: true, defaultValue: 1 }, // Добавлено defaultValue: 1
+    count: { type: DataTypes.SMALLINT, allowNull: true, defaultValue: 1 },
   },
   { tableName: "Order_Service", timestamps: false }
 );
 
-// Ассоциации с указанием внешних ключей и правил ON UPDATE/DELETE согласно DDL
-
-// Client <-> ClientCar
 Client.hasMany(ClientCar, { foreignKey: "clientId" });
 ClientCar.belongsTo(Client, {
   foreignKey: "clientId",
@@ -193,7 +188,6 @@ ClientCar.belongsTo(Client, {
   onDelete: "RESTRICT",
 });
 
-// Client <-> Order
 Client.hasMany(Order, { foreignKey: "clientId" });
 Order.belongsTo(Client, {
   foreignKey: "clientId",
@@ -201,18 +195,13 @@ Order.belongsTo(Client, {
   onDelete: "RESTRICT",
 });
 
-// Engine <-> ClientCar
-// В DDL Engine.hasMany(ClientCar) не определено явно, но ClientCar.belongsTo(Engine) есть.
-// Sequelize требует двусторонней связи для hasMany/belongsTo, если вы их обе определяете.
-// Если вам не нужна навигация от Engine к ClientCar, можно оставить только belongsTo.
-Engine.hasMany(ClientCar, { foreignKey: "engineNumber" }); // Если нужна навигация от Engine
+Engine.hasMany(ClientCar, { foreignKey: "engineNumber" });
 ClientCar.belongsTo(Engine, {
   foreignKey: "engineNumber",
   onUpdate: "CASCADE",
   onDelete: "SET NULL",
 });
 
-// CarModel <-> ClientCar
 CarModel.hasMany(ClientCar, { foreignKey: "brandModelId" });
 ClientCar.belongsTo(CarModel, {
   foreignKey: "brandModelId",
@@ -220,7 +209,6 @@ ClientCar.belongsTo(CarModel, {
   onDelete: "CASCADE",
 });
 
-// ClientCar <-> Order
 ClientCar.hasMany(Order, { foreignKey: "carId" });
 Order.belongsTo(ClientCar, {
   foreignKey: "carId",
@@ -228,7 +216,6 @@ Order.belongsTo(ClientCar, {
   onDelete: "CASCADE",
 });
 
-// Box <-> Order
 Box.hasMany(Order, { foreignKey: "boxId" });
 Order.belongsTo(Box, {
   foreignKey: "boxId",
@@ -236,7 +223,6 @@ Order.belongsTo(Box, {
   onDelete: "CASCADE",
 });
 
-// Employee <-> Order
 Employee.hasMany(Order, { foreignKey: "employeeId" });
 Order.belongsTo(Employee, {
   foreignKey: "employeeId",
@@ -244,8 +230,6 @@ Order.belongsTo(Employee, {
   onDelete: "SET NULL",
 });
 
-// Employee <-> Specialization
-// В DDL Specialization.belongsTo(Employee) (FK "employeeId" в "Specialization")
 Employee.hasMany(Specialization, { foreignKey: "employeeId" });
 Specialization.belongsTo(Employee, {
   foreignKey: "employeeId",
@@ -253,20 +237,19 @@ Specialization.belongsTo(Employee, {
   onDelete: "CASCADE",
 });
 
-// Order <-> Service (Many-to-Many)
 Order.belongsToMany(Service, {
   through: Order_Service,
-  foreignKey: "orderId", // FK в Order_Service, ссылающийся на Order
-  otherKey: "serviceId", // FK в Order_Service, ссылающийся на Service
+  foreignKey: "orderId",
+  otherKey: "serviceId",
   onUpdate: "CASCADE",
-  onDelete: "CASCADE", // Для связи Order -> Order_Service
+  onDelete: "CASCADE",
 });
 Service.belongsToMany(Order, {
   through: Order_Service,
-  foreignKey: "serviceId", // FK в Order_Service, ссылающийся на Service
-  otherKey: "orderId", // FK в Order_Service, ссылающийся на Order
+  foreignKey: "serviceId",
+  otherKey: "orderId",
   onUpdate: "CASCADE",
-  onDelete: "RESTRICT", // Для связи Service -> Order_Service
+  onDelete: "RESTRICT",
 });
 
 module.exports = {

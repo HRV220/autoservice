@@ -14,9 +14,6 @@ const ApiError = require("../error/ApiError");
 
 class OrderController {
   async create(req, res, next) {
-    console.log("--- Получен запрос на создание заказа ---");
-    console.log("Тело запроса (req.body):", JSON.stringify(req.body, null, 2));
-
     const t = await sequelize.transaction();
     try {
       const {
@@ -39,15 +36,6 @@ class OrderController {
 
       const finalCreateDate = createDate ? new Date(createDate) : new Date();
       const finalCompleteDate = completeDate ? new Date(completeDate) : null;
-
-      console.log(
-        `[ЛОГ] Дата начала для сохранения: ${finalCreateDate.toISOString()}`
-      );
-      if (finalCompleteDate) {
-        console.log(
-          `[ЛОГ] Дата конца для сохранения: ${finalCompleteDate.toISOString()}`
-        );
-      }
 
       const serviceIds = services.map((s) => s.serviceId);
       const servicesFromDb = await Service.findAll({
@@ -73,7 +61,6 @@ class OrderController {
       });
       console.log(`[ЛОГ] Рассчитана итоговая цена: ${totalPrice}`);
 
-      // === ВОТ ПРАВИЛЬНЫЙ БЛОК ПОИСКА BOX ID ===
       let foundBoxId = null;
       if (boxNumber && placeNumber) {
         console.log(
@@ -123,10 +110,10 @@ class OrderController {
           clientId,
           employeeId: employeeId || null,
           carId,
-          boxId: foundBoxId, // Используем найденный ID
+          boxId: foundBoxId,
           price: totalPrice,
-          createDate: finalCreateDate, // <-- Используем объект Date
-          completeDate: finalCompleteDate, // <-- Используем объект Date или null
+          createDate: finalCreateDate,
+          completeDate: finalCompleteDate,
           status: status || "ожидает",
         },
         { transaction: t }
@@ -165,40 +152,39 @@ class OrderController {
 
       const orders = await Order.findAll({
         where: whereCondition,
-        // === ИСПРАВЛЕННЫЙ И УПРОЩЕННЫЙ INCLUDE ===
         include: [
           {
             model: Client,
             attributes: ["firstName", "lastName"],
-            required: false, // Делаем LEFT JOIN, чтобы заказ отобразился, даже если клиент удален
+            required: false,
           },
           {
             model: Employee,
             attributes: ["firstName", "lastName"],
-            required: false, // Делаем LEFT JOIN
+            required: false,
           },
           {
             model: ClientCar,
             attributes: ["stateNumber"],
-            required: false, // Делаем LEFT JOIN
+            required: false,
             include: [
               {
                 model: CarModel,
                 attributes: ["brand", "model"],
-                required: false, // Делаем LEFT JOIN
+                required: false,
               },
             ],
           },
           {
             model: Box,
             attributes: ["boxId", "boxNumber"],
-            required: false, // Делаем LEFT JOIN
+            required: false,
           },
           {
             model: Service,
             attributes: ["nameService"],
             through: { attributes: [] },
-            required: false, // Делаем LEFT JOIN
+            required: false,
           },
         ],
         order: [["createDate", "ASC"]],
@@ -206,7 +192,6 @@ class OrderController {
 
       return res.json(orders);
     } catch (e) {
-      // Эта строка выведет в консоль сервера точную ошибку
       console.error("SERVER ERROR in getAll Orders:", e);
       next(ApiError.internal("Ошибка при получении списка заказов"));
     }
@@ -217,7 +202,6 @@ class OrderController {
       const { id } = req.params;
       const order = await Order.findOne({
         where: { orderId: id },
-        // Используем более простую и надежную структуру include
         include: [
           {
             model: Client,
@@ -230,11 +214,10 @@ class OrderController {
           {
             model: ClientCar,
             attributes: ["stateNumber"],
-            // Подгружаем CarModel так же, как в других контроллерах
             include: [
               {
                 model: CarModel,
-                as: "CarModel", // Указываем alias
+                as: "CarModel",
                 attributes: ["brand", "model"],
               },
             ],
@@ -256,7 +239,7 @@ class OrderController {
       }
       return res.json(order);
     } catch (e) {
-      console.error("SERVER ERROR in getOne Order:", e); // Добавим лог для отладки
+      console.error("SERVER ERROR in getOne Order:", e);
       next(ApiError.internal("Ошибка при получении заказа: " + e.message));
     }
   }
@@ -274,18 +257,13 @@ class OrderController {
       if (!order) {
         return next(ApiError.notFound("Заказ не найден для обновления"));
       }
-
-      let totalPrice = order.price; // Начинаем с текущей цены
-
-      // Если пришел новый список услуг, полностью его переписываем и пересчитываем цену
+      let totalPrice = order.price;
       if (services && Array.isArray(services)) {
         console.log("[ЛОГ UPDATE] Обновляем список услуг...");
 
-        // 1. Удаляем старые связи
         await Order_Service.destroy({ where: { orderId: id }, transaction: t });
 
         if (services.length > 0) {
-          // 2. Создаем новые, если они есть
           const orderServices = services.map((s) => ({
             orderId: id,
             serviceId: s.serviceId,
@@ -293,14 +271,13 @@ class OrderController {
           }));
           await Order_Service.bulkCreate(orderServices, { transaction: t });
 
-          // 3. Пересчитываем цену
           const serviceIds = services.map((s) => s.serviceId);
           const servicesFromDb = await Service.findAll({
             where: { serviceId: serviceIds },
             transaction: t,
           });
 
-          totalPrice = 0; // Сбрасываем цену, так как список услуг новый
+          totalPrice = 0;
           services.forEach((reqService) => {
             const dbService = servicesFromDb.find(
               (s) => s.serviceId === reqService.serviceId
@@ -312,17 +289,16 @@ class OrderController {
           });
           console.log(`[ЛОГ UPDATE] Новая рассчитанная цена: ${totalPrice}`);
         } else {
-          totalPrice = 0; // Если все услуги удалили, цена становится 0
+          totalPrice = 0;
         }
       }
 
-      // Обновляем основные поля заказа
       await order.update(
         {
           status,
           employeeId,
           boxId,
-          price: totalPrice, // Сохраняем новую или старую цену
+          price: totalPrice,
         },
         { transaction: t }
       );
@@ -330,7 +306,6 @@ class OrderController {
       await t.commit();
       console.log(`[ЛОГ UPDATE] Заказ ${id} успешно обновлен.`);
 
-      // Находим и возвращаем полностью обновленный заказ со всеми связями
       const updatedOrderWithIncludes = await Order.findOne({
         where: { orderId: id },
         include: [
@@ -378,14 +353,11 @@ class OrderController {
         await t.rollback();
         return next(ApiError.notFound("Заказ не найден"));
       }
-
-      // Удаляем связи из Order_Service
       await Order_Service.destroy({
         where: { orderId: id },
         transaction: t,
       });
 
-      // Удаляем сам заказ
       await Order.destroy({
         where: { orderId: id },
         transaction: t,

@@ -1,6 +1,6 @@
 const ApiError = require("../error/ApiError");
 const bcrypt = require("bcrypt");
-const { User } = require("../entity/models/models"); // Предполагая, что User экспортируется из models.js
+const { User } = require("../entity/models/models");
 const jwt = require("jsonwebtoken");
 
 const generateJwt = (id, login) => {

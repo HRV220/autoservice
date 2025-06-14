@@ -103,20 +103,16 @@ class ClientController {
 
       const client = await Client.findOne({
         where: { clientId: id },
-        // === ОБНОВЛЕННЫЙ И БОЛЕЕ НАДЕЖНЫЙ INCLUDE ===
         include: [
           {
-            model: ClientCar, // Sequelize будет использовать имя по умолчанию 'ClientCars'
-            include: [
-              { model: CarModel }, // Имя по умолчанию 'CarModel'
-              { model: Engine }, // Имя по умолчанию 'Engine'
-            ],
+            model: ClientCar,
+            include: [{ model: CarModel }, { model: Engine }],
           },
           {
-            model: Order, // Имя по умолчанию 'Orders'
+            model: Order,
             include: [
               {
-                model: Service, // Имя по умолчанию 'Services'
+                model: Service,
                 attributes: ["nameService"],
                 through: { attributes: [] },
               },
@@ -129,10 +125,8 @@ class ClientController {
         return next(ApiError.notFound("Клиент с таким ID не найден"));
       }
 
-      // Отправляем на фронт как есть, фронт разберется
       return res.json(client);
     } catch (e) {
-      // Логируем ошибку для отладки
       console.error("SERVER ERROR in getOne Client:", e);
       next(
         ApiError.internal("Ошибка при получении данных клиента: " + e.message)

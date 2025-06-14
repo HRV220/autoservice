@@ -2,10 +2,8 @@ const { Employee, Specialization } = require("../entity/models/models");
 const ApiError = require("../error/ApiError");
 
 class EmployeeController {
-  // === CREATE ===
   async create(req, res, next) {
     try {
-      // Предполагаем, что специализации приходят как массив строк
       const {
         firstName,
         lastName,
@@ -29,7 +27,6 @@ class EmployeeController {
         experience,
       });
 
-      // Если переданы специализации, создаем их и привязываем
       if (
         specializations &&
         Array.isArray(specializations) &&
@@ -48,14 +45,13 @@ class EmployeeController {
     }
   }
 
-  // === READ ALL ===
   async getAll(req, res, next) {
     try {
       const employees = await Employee.findAll({
         include: [
           {
             model: Specialization,
-            as: "Specializations", // Убедитесь, что alias в модели 'Specializations'
+            as: "Specializations",
             attributes: ["specializationName"],
           },
         ],
@@ -71,9 +67,7 @@ class EmployeeController {
     }
   }
 
-  // === READ ONE ===
   async getOne(req, res, next) {
-    // Логика для детальной страницы сотрудника (пока не нужна, но сделаем заготовку)
     try {
       const { id } = req.params;
       const employee = await Employee.findOne({
@@ -91,10 +85,7 @@ class EmployeeController {
     }
   }
 
-  // === UPDATE ===
   async update(req, res, next) {
-    // Логика обновления, включая специализации
-    // Для простоты пока оставим базовую версию
     try {
       const { id } = req.params;
       const data = req.body;
@@ -111,11 +102,9 @@ class EmployeeController {
     }
   }
 
-  // === DELETE ===
   async delete(req, res, next) {
     try {
       const { id } = req.params;
-      // Sequelize автоматически удалит связанные специализации благодаря onDelete: 'CASCADE'
       const deleted = await Employee.destroy({ where: { employeeId: id } });
       if (!deleted) return next(ApiError.notFound("Сотрудник не найден"));
       return res.json({ message: "Сотрудник успешно удален" });

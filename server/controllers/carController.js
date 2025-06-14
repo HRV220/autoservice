@@ -1,6 +1,5 @@
 const uuid = require("uuid");
 const path = require("path");
-// ИСПРАВЛЕНО: Добавляем CarModel обратно в импорт
 const { ClientCar, Engine, CarModel } = require("../entity/models/models");
 const sequelize = require("../db");
 const ApiError = require("../error/ApiError");
@@ -107,7 +106,7 @@ class CarController {
       }
 
       delete carData.engineNumber;
-      delete carData.brandModelId; // Также удалим это, чтобы избежать случайных ошибок
+      delete carData.brandModelId;
 
       const [updatedRowsCount] = await ClientCar.update(carData, {
         where: { carId: id },

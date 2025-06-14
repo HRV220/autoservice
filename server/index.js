@@ -20,7 +20,7 @@ const start = async () => {
   try {
     await sequilize.authenticate();
     console.log("Аунтефикация в базе прошла успешно");
-    await sequilize.sync();
+    await sequilize.sync({ alter: true });
     console.log("СИнхронизация с базой прошла успешно");
     app.listen(PORT, () => console.log(`Server started on PORT: ${PORT}`));
   } catch (e) {

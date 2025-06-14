@@ -2,7 +2,6 @@ const { Service } = require("../entity/models/models");
 const ApiError = require("../error/ApiError");
 
 class ServiceController {
-  // === CREATE: Создание новой услуги ===
   async create(req, res, next) {
     try {
       const { nameService, description, price } = req.body;
@@ -25,11 +24,10 @@ class ServiceController {
     }
   }
 
-  // === READ: Получение всех услуг ===
   async getAll(req, res, next) {
     try {
       const services = await Service.findAll({
-        order: [["nameService", "ASC"]], // Сортируем по названию в алфавитном порядке
+        order: [["nameService", "ASC"]],
       });
       return res.json(services);
     } catch (e) {
@@ -39,7 +37,6 @@ class ServiceController {
     }
   }
 
-  // === READ: Получение одной услуги по ID ===
   async getOne(req, res, next) {
     try {
       const { id } = req.params;
@@ -53,7 +50,6 @@ class ServiceController {
     }
   }
 
-  // === UPDATE: Обновление услуги ===
   async update(req, res, next) {
     try {
       const { id } = req.params;
@@ -76,7 +72,6 @@ class ServiceController {
     }
   }
 
-  // === DELETE: Удаление услуги ===
   async delete(req, res, next) {
     try {
       const { id } = req.params;
